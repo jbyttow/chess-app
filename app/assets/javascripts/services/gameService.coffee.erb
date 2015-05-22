@@ -1,0 +1,153 @@
+
+class ChessPiece extends chessApp.Graphic
+  constructor: (@imgKey, @squareWidth)->
+    @padding = 5
+    @color = 'black'
+    @w = @squareWidth - @padding * 2
+    @h = @squareWidth - @padding * 2
+
+  setPos: (x, y)->
+    @x = x + @padding
+    @y = y + @padding
+
+  
+
+  @getPiece: (t, w)->
+    colorCode = if t[0] == '+' then 'white' else 'black'
+    switch t[1]
+      when '1' then return new Pawn colorCode, w
+      when '2' then return new Rook colorCode, w
+      when '3' then return new Knight colorCode, w
+      when '4' then return new Bishop colorCode, w
+      when '5' then return new Queen colorCode, w
+      when '6' then return new King colorCode, w
+
+class Pawn extends ChessPiece
+  constructor: (@color, w)->
+    super 'badge-david', w
+
+class Rook extends ChessPiece
+  constructor: (@color, w)->
+    super 'badge-david', w
+
+class Knight extends ChessPiece
+  constructor: (@color, w)->
+    super 'badge-david', w
+
+class Bishop extends ChessPiece
+  constructor: (@color, w)->
+    super 'badge-david', w
+
+class Queen extends ChessPiece
+  constructor: (@color, w)->
+    super 'badge-david', w
+
+class King extends ChessPiece
+  constructor: (@color, w)->
+    super 'badge-david', w
+
+
+class BoardSquare extends chessApp.Rectangle 
+  constructor: (@x, @y, @w, @label, colorIndex)->
+    @color = if colorIndex == 0 then '#FFFFFF' else '#000000'
+    @h = @w
+    @piece = null
+
+  draw: (ctx)->
+    super ctx
+
+  setPiece: (@piece)->
+
+class ChessBoard
+  constructor: ()->
+    @columnLabels = ['8', '7', '6', '5', '4', '3', '2', '1']
+    @rowLabels = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+    @pieces = []
+
+  initialize: (width, data)->
+    @grid = []
+    squares = 8
+    posX = 0
+    posY = 0
+    squareWidth = width / squares
+
+    for i in [0..squares - 1]
+      alternate = i % 2
+      columns = []
+      for j in [0..squares - 1]
+        squareLabel = @columnLabels[i] + @rowLabels[j]
+        columns[j] = new BoardSquare posX, posY, squareWidth, squareLabel, (j + alternate) % 2
+
+        if data.gameState.boardState[squareLabel]
+          piece = ChessPiece.getPiece data.gameState.boardState[squareLabel], squareWidth
+          piece.setPos posX, posY
+          columns[j].setPiece piece
+          @pieces.push piece
+
+        posX += squareWidth
+      posX = 0
+      posY += squareWidth
+      
+      @grid[i] = columns
+
+  update: (data)->
+    #for r in @grid
+    #  for c in r
+    #    continue
+
+  draw: (ctx, tFrame)->
+    for r in @grid
+      for c in r
+        c.draw ctx, tFrame
+
+    for p in @pieces
+      p.draw ctx, tFrame
+
+
+
+class GameService
+  constructor:(@renderService, @touchService) -> 
+    @chessBoard = new ChessBoard()
+    @selectedPiece = null
+    @lastPos = {0, 0}
+
+  initialize: (@canvas, data) ->
+    width = $(@canvas).width()
+    height = $(@canvas).height()
+
+    chessApp.AssetService.initialize()
+    chessApp.AssetService.cacheImage '<%= asset_path("badge-david@3x.png") %>'
+
+    @chessBoard.initialize width, data
+
+    @touchService.initialize @canvas
+    @touchService.subscribe @
+
+    @renderService.addDrawable @chessBoard
+
+  onDown: (pos)=>
+    for p in @chessBoard.pieces
+      if p.hitTest pos, 0
+        @selectedPiece = p
+    @lastPos = pos
+
+  onUp: (pos)=>
+    @selectedPiece = null
+  
+  onMove: (pos)=>
+    if @selectedPiece
+      @selectedPiece.x += pos.x - @lastPos.x
+      @selectedPiece.y += pos.y - @lastPos.y
+      @lastPos = pos
+
+
+  onLeave: (pos)=>
+    if @selectedPiece then @selectedPiece = null
+    
+
+  update: (tFrame, data) ->
+    @chessBoard.update data
+
+angular.module('chessApp').factory "gameService", ["renderService", "touchService", (renderService, touchService)->
+  new GameService renderService, touchService
+] 
