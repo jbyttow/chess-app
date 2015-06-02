@@ -6,7 +6,7 @@ class chessApp.Drawable
     @w = 0
     @h = 0
 
-  hitTest: (pos, boundsIncrease)->
+  hitTest: (pos, boundsIncrease=0)->
     return (
       pos.x >= @x - boundsIncrease && 
       pos.x <= @x + @w + boundsIncrease &&

@@ -9,9 +9,7 @@ class ChessPiece extends chessApp.Graphic
   setPos: (x, y)->
     @x = x + @padding
     @y = y + @padding
-
   
-
   @getPiece: (t, w)->
     colorCode = if t[0] == '+' then 'white' else 'black'
     switch t[1]
@@ -48,21 +46,28 @@ class King extends ChessPiece
 
 
 class BoardSquare extends chessApp.Rectangle 
-  constructor: (@x, @y, @w, @label, colorIndex)->
-    @color = if colorIndex == 0 then '#FFFFFF' else '#000000'
+  constructor: (@x, @y, @w, @label, @colorIndex)->
+    @color = if @colorIndex == 0 then '#FFFFFF' else '#000000'
     @h = @w
-    @piece = null
+    @highlighted = false
 
   draw: (ctx)->
     super ctx
 
   setPiece: (@piece)->
 
+  setHighlighted: (highlighted)->
+    if highlighted
+      @color = '#CCCCCC'
+    else
+      @color = if @colorIndex == 0 then '#FFFFFF' else '#000000'
+
 class ChessBoard
   constructor: ()->
     @columnLabels = ['8', '7', '6', '5', '4', '3', '2', '1']
     @rowLabels = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
     @pieces = []
+    @highlightedSquare = null
 
   initialize: (width, data)->
     @grid = []
@@ -90,10 +95,23 @@ class ChessBoard
       
       @grid[i] = columns
 
-  update: (data)->
-    #for r in @grid
-    #  for c in r
-    #    continue
+  highlightSquare: (c)->
+    if c.hitTest @gs.lastPos
+      c.setHighlighted true
+      @highlightedSquare = c
+    else
+      c.setHighlighted false
+
+  snapPiece: ()->
+    if @gs.selectedPiece and @highlightedSquare
+      @gs.selectedPiece.setPos @highlightedSquare.x, @highlightedSquare.y
+      @highlightedSquare.setHighlighted false
+
+  update: (@state, @gs)->
+    for r in @grid
+      for c in r
+        if @gs.selectedPiece then @highlightSquare c
+  
 
   draw: (ctx, tFrame)->
     for r in @grid
@@ -102,7 +120,6 @@ class ChessBoard
 
     for p in @pieces
       p.draw ctx, tFrame
-
 
 
 class GameService
@@ -132,7 +149,9 @@ class GameService
     @lastPos = pos
 
   onUp: (pos)=>
-    @selectedPiece = null
+    if @selectedPiece
+      @chessBoard.snapPiece()
+      @selectedPiece = null
   
   onMove: (pos)=>
     if @selectedPiece
@@ -143,10 +162,9 @@ class GameService
 
   onLeave: (pos)=>
     if @selectedPiece then @selectedPiece = null
-    
-
-  update: (tFrame, data) ->
-    @chessBoard.update data
+  
+  update: (tFrame, gameState) ->
+    @chessBoard.update gameState, @
 
 angular.module('chessApp').factory "gameService", ["renderService", "touchService", (renderService, touchService)->
   new GameService renderService, touchService

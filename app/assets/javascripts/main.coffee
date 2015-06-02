@@ -8,9 +8,4 @@ app = angular.module('chessApp', ['ngRoute', 'templates'])
 
 window.chessApp = {}
 
-app.config(['$routeProvider', ($routeProvider) ->
-  $routeProvider.when('/', { 
-    templateUrl: 'index.html'
-    controller: 'chessController'
-  })
-])
+
